@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Image Detector</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>The Most <span class="highlight">Accurate</span> AI Art Detector!</h1>
+            <p class="subtitle">Upload an art to see if it was generated or altered by AI. Try now for free!</p>
+        </div>
+        <div class="main-content">
+            <div class="upload-section">
+                <form action="/predict" method="post" enctype="multipart/form-data">
+                    <div class="upload-card">
+                        <div class="drag-area" id="dragArea">
+                            <div class="upload-content">
+                                <svg class="upload-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                                    <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96zM14 13v4h-4v-4H7l5-5 5 5h-3z"/>
+                                </svg>
+                                <p class="upload-text">Click to upload or drag and drop</p>
+                            </div>
+                            <div class="preview-area" id="preview">
+                                <button class="remove-btn" id="removeBtn">×</button>
+                            </div>
+                            <input type="file" name="file" hidden accept="image/*" id="fileInput">
+                        </div>
+                    </div>
+                    <div id="preview" class="image-preview"></div>
+                    <button type="submit" class="detect-btn">Run AI Detection</button>
+                    <p class="terms">By continuing you agree to our <a href="#">Terms of Service</a></p>
+                </form>
+            </div>
+
+            <div class="right-panel">
+                <div class="features-section">
+                    <h2>The Most <span class="highlight">Accurate</span> AI Image Detector</h2>
+                    <div class="features">
+                        <div class="feature-item">
+                            <span class="arrow">→</span>
+                            <p>Detect AI Generated and AI Altered Images</p>
+                        </div>
+                        <div class="feature-item">
+                            <span class="arrow">→</span>
+                            <p>Identify the model/tool used to generate the Image</p>
+                        </div>
+                        <div class="feature-item">
+                            <span class="arrow">→</span>
+                            <p>Free, Fast, and Accurate</p>
+                        </div>
+                    </div>
+                </div>   
+            </div>
+        </div>
+    </div>
+        <!-- <div class="upload-container">
+            <div class="upload-left">
+                <form action="/predict" method="post" enctype="multipart/form-data">
+                    <div class="drag-area">
+                        <div class="icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <header>Drag & Drop to Upload File</header>
+                        <span>OR</span>
+                        <button type="button" class="browse">Browse File</button>
+                        <input type="file" name="file" hidden>
+                    </div>
+                    <div id="preview" class="image-preview"></div>
+                    <button type="submit" class="submit-btn">Detect Image</button>
+                    {% if result %}
+                    <div class="result">
+                        <h2>Result:</h2>
+                        <p class="prediction">{{ result }}</p>
+                    </div>
+                    {% endif %}
+                </form>
+            </div>
+            <div class="upload-right">
+                <div class="info-panel">
+                    <h2>How to use</h2>
+                    <ul>
+                        <li>Upload or drag & drop an image.</li>
+                        <li>Click "Detect Image" to see the result.</li>
+                        <li>The result will appear below your image.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div> -->
+    <script src="https://kit.fontawesome.com/a076d05399.js"></script>
+    <script>
+        const dragArea = document.getElementById('dragArea');
+        const fileInput = document.getElementById('fileInput');
+        const preview = document.getElementById('preview');
+        const removeBtn = document.getElementById('removeBtn');
+
+        // Handle click to upload
+        dragArea.addEventListener('click', (e) => {
+            if (e.target !== removeBtn) {
+                fileInput.click();
+            }
+        });
+
+        // Handle file selection
+        fileInput.addEventListener('change', handleFile);
+
+        // Handle drag events
+        dragArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dragArea.classList.add('active');
+        });
+
+        dragArea.addEventListener('dragleave', () => {
+            dragArea.classList.remove('active');
+        });
+
+        dragArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dragArea.classList.remove('active');
+            const file = e.dataTransfer.files[0];
+            fileInput.files = e.dataTransfer.files;
+            handleFile({ target: { files: [file] } });
+        });
+        document.querySelector('form').addEventListener('submit', function() {
+            const featuresSection = document.querySelector('.features-section');
+            const resultSection = document.getElementById('resultSection');
+            
+            featuresSection.style.display = 'none';
+            resultSection.style.display = 'block';
+        });
+
+        removeBtn.addEventListener('click', function(e) {
+            // ...existing remove button code...
+            e.stopPropagation(); // Prevent dragArea click event
+            preview.innerHTML = '<button class="remove-btn" id="removeBtn">×</button>';
+            dragArea.classList.remove('has-image');
+            fileInput.value = ''; // Clear the file input
+ 
+            document.getElementById('featuresSection').classList.remove('hidden');
+            document.getElementById('resultSection').style.display = 'none';
+        });
+
+        // Check if there's a result on page load (for when form returns)
+        window.addEventListener('load', function() {
+            if (document.querySelector('.result-card')) {
+                document.getElementById('featuresSection').classList.add('hidden');
+                document.getElementById('resultSection').style.display = 'block';
+            }
+        });
+
+        function handleFile(e) {
+            const file = e.target.files[0];
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.innerHTML = `
+                        <button class="remove-btn" id="removeBtn">×</button>
+                        <img src="${e.target.result}" alt="Preview">
+                    `;
+                    dragArea.classList.add('has-image');
+                    
+                    // Reattach event listener to new remove button
+                    document.getElementById('removeBtn').addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        preview.innerHTML = '<button class="remove-btn" id="removeBtn">×</button>';
+                        dragArea.classList.remove('has-image');
+                        fileInput.value = '';
+                    });
+                }
+                reader.readAsDataURL(file);
+            }
+        }  
+    </script>
+</body>
+</html>
